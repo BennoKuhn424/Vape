@@ -20,6 +20,9 @@
       padding: 1rem;
       position: relative;
       cursor: none; /* Hide the default cursor on desktop */
+      /* Remove fixed positioning that prevents scrolling */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     
     /* Show normal cursor on mobile */
@@ -110,6 +113,12 @@
       overflow-y: auto;
       padding-right: 0.5rem;
       -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+
+    @media (max-width: 768px) {
+      .location-list {
+        max-height: 50vh; /* Slightly taller on mobile */
+      }
     }
 
     .location-item {
@@ -409,7 +418,7 @@
       height: 16px;
       border-radius: 50%;
       background-color: #a78bfa;
-      box-shadow: 0 0 8px 2px rgba(167, 139, 250, 0.5);
+      box-shadow: 0 0 8px 2px rgba(167, 139, 250,.5);
       pointer-events: none;
       z-index: 1000;
       transform: translate(-50%, -50%);
@@ -555,10 +564,6 @@
         padding: 0.75rem;
       }
       
-      .location-list {
-        max-height: 40vh; /* Use viewport height for better mobile experience */
-      }
-      
       .maps-link-container {
         padding: 8px 0;
       }
@@ -567,21 +572,6 @@
         width: 100%; /* Full width button on mobile */
         justify-content: center;
       }
-    }
-    
-    /* Fix for iOS overscroll behavior */
-    html {
-      position: fixed;
-      height: 100%;
-      overflow: hidden;
-    }
-    
-    body {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      overflow-y: scroll;
-      -webkit-overflow-scrolling: touch;
     }
   </style>
 </head>
@@ -781,15 +771,6 @@
       btnSkip.addEventListener('click', () => {
         locationModal.style.display = 'none';
       });
-      
-      // Fix for iOS overscroll issues
-      if (isMobile) {
-        document.body.addEventListener('touchmove', function(e) {
-          if (e.target.closest('.location-list') === null) {
-            e.preventDefault();
-          }
-        }, { passive: false });
-      }
     }
 
     // Get user's location
@@ -937,8 +918,7 @@
     // Render the list of locations
     function renderLocationList() {
       if (filteredLocations.length === 0) {
-        locationList.innerHTML = '<p class="loading-message">less goo found</p>';
-          locationList.innerHTML = '<p class="loading-message">No locations found</p>';
+        locationList.innerHTML = '<p class="loading-message">No locations found</p>';
         return;
       }
       
@@ -953,336 +933,390 @@
       locationList.innerHTML = '';
       locationsToRender.forEach(location => {
         const availableProducts = location.stock.filter(item => item.available > 0).length;
-        const locationItem = document.createElement('div');
-        locationItem.className = `location-item ${location.id === selectedLocationId ? 'selected' : ''}`;
-        locationItem.dataset.id = location.id;
-        
-        // Distance HTML if available
-        let distanceHTML = '';
-        if (userLocation && location.distance !== undefined) {
-          distanceHTML = `
-            <div class="location-distance">
-              <svg class="distance-icon icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span>${formatDistance(location.distance)} away</span>
-            </div>
-          `;
-        }
-        
-        locationItem.innerHTML = `
-          <div class="location-header">
-            <svg class="location-icon icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-            <div>
-              <div class="location-name">${location.name}</div>
-              <div class="location-address">${location.address}</div>
-              ${distanceHTML}
-              <div class="location-stock">
-                <svg class="stock-icon icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                </svg>
-                <span>${availableProducts} products available</span>
-              </div>
-            </div>
-          </div>
-        `;
-        locationItem.addEventListener('click', () => selectLocation(location.id));
-        locationList.appendChild(locationItem);
-      });
-    }
-
-    // Render map markers
-    function renderMapMarkers() {
-      mapMarkers.innerHTML = '';
-      
-      // Copy and potentially sort the locations
-      let locationsToRender = [...filteredLocations];
-      
-      // Sort by distance if user location is available
-      if (userLocation) {
-        locationsToRender.sort((a, b) => a.distance - b.distance);
-      }
-      
-      locationsToRender.forEach(location => {
-        const marker = document.createElement('div');
-        marker.className = `map-marker ${location.id === selectedLocationId ? 'selected' : ''}`;
-        marker.dataset.id = location.id;
-        
-        // Include distance if available
-        let markerText = location.name;
-        if (userLocation && location.distance !== undefined) {
-          markerText = `${location.name} (${formatDistance(location.distance)})`;
-        }
-        
-        marker.innerHTML = `
-          <svg class="map-marker-icon icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
+  const locationItem = document.createElement('div');
+  locationItem.className = `location-item ${location.id === selectedLocationId ? 'selected' : ''}`;
+  locationItem.dataset.id = location.id;
+  
+  // Distance HTML if available
+  let distanceHTML = '';
+  if (userLocation && location.distance !== undefined) {
+    distanceHTML = `
+      <div class="location-distance">
+        <svg class="distance-icon icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>${formatDistance(location.distance)} away</span>
+      </div>
+    `;
+  }
+  
+  locationItem.innerHTML = `
+    <div class="location-header">
+      <svg class="location-icon icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      </svg>
+      <div>
+        <div class="location-name">${location.name}</div>
+        <div class="location-address">${location.address}</div>
+        ${distanceHTML}
+        <div class="location-stock">
+          <svg class="stock-icon icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
           </svg>
-          <span class="map-marker-name">${markerText}</span>
-        `;
-        marker.addEventListener('click', () => selectLocation(location.id));
-        mapMarkers.appendChild(marker);
-      });
-    }
-
-    // Update map count text
-    function updateMapCount() {
-      mapCount.textContent = `Showing ${filteredLocations.length} vape vending machines in Pretoria`;
-    }
-
-    // Render details panel for selected location
-    function renderDetailsPanel() {
-      if (selectedLocationId === null) {
-        detailsContainer.innerHTML = `
-          <div class="details-empty">
-            <p>Select a location to view details</p>
-          </div>
-        `;
-        mapsLinkContainer.style.display = 'none';
-        return;
-      }
-      
-      const location = locations.find(loc => loc.id === selectedLocationId);
-      if (!location) return;
-      
-      // Add distance information if available
-      let distanceHTML = '';
-      if (userLocation && location.distance !== undefined) {
-        distanceHTML = `
-          <p class="location-distance" style="margin-top: 8px;">
-            <svg class="distance-icon icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            <span>${formatDistance(location.distance)} from your location</span>
-          </p>
-        `;
-      }
-      
-      let stockHTML = '';
-      location.stock.forEach(item => {
-        stockHTML += `
-          <div class="stock-item">
-            <div>
-              <div class="stock-name">${item.name}</div>
-              <div class="stock-flavor">${item.flavor}</div>
-              <div class="stock-price">${item.price}</div>
-            </div>
-            <div class="stock-availability ${item.available > 0 ? 'in-stock' : 'out-of-stock'}">
-              ${item.available > 0 ? `${item.available} left` : 'Out of stock'}
-            </div>
-          </div>
-        `;
-      });
-      
-      detailsContainer.innerHTML = `
-        <div class="details-header">
-          <div>
-            <h2 class="details-title">${location.name}</h2>
-            <p class="details-address">${location.address}</p>
-            ${distanceHTML}
-          </div>
-          <div class="details-status">Open 24/7</div>
+          <span>${availableProducts} products available</span>
         </div>
-        
-        <div class="stock-section">
-          <h3 class="stock-title">
-            <svg class="stock-title-icon icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 10h-7l3-3"></path>
-              <path d="M18 14h-7l3 3"></path>
-              <path d="M8 18.945V20a2 2 0 01-2 2H2"></path>
-              <path d="M2 6v12"></path>
-              <path d="M6 2H4a2 2 0 00-2 2v2"></path>
-            </svg>
-            Current Stock
-          </h3>
-          
-          <div class="stock-grid">
-            ${stockHTML}
-          </div>
+      </div>
+    </div>
+  `;
+  locationItem.addEventListener('click', () => selectLocation(location.id));
+  locationList.appendChild(locationItem);
+});
+}
+
+// Render map markers
+function renderMapMarkers() {
+  mapMarkers.innerHTML = '';
+  
+  // Copy and potentially sort the locations
+  let locationsToRender = [...filteredLocations];
+  
+  // Sort by distance if user location is available
+  if (userLocation) {
+    locationsToRender.sort((a, b) => a.distance - b.distance);
+  }
+  
+  locationsToRender.forEach(location => {
+    const marker = document.createElement('div');
+    marker.className = `map-marker ${location.id === selectedLocationId ? 'selected' : ''}`;
+    marker.dataset.id = location.id;
+    
+    // Include distance if available
+    let markerText = location.name;
+    if (userLocation && location.distance !== undefined) {
+      markerText = `${location.name} (${formatDistance(location.distance)})`;
+    }
+    
+    marker.innerHTML = `
+      <svg class="map-marker-icon icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      </svg>
+      <span class="map-marker-name">${markerText}</span>
+    `;
+    marker.addEventListener('click', () => selectLocation(location.id));
+    mapMarkers.appendChild(marker);
+  });
+}
+
+// Update map count text
+function updateMapCount() {
+  mapCount.textContent = `Showing ${filteredLocations.length} vape vending machines in Pretoria`;
+}
+
+// Render details panel for selected location
+function renderDetailsPanel() {
+  if (selectedLocationId === null) {
+    detailsContainer.innerHTML = `
+      <div class="details-empty">
+        <p>Select a location to view details</p>
+      </div>
+    `;
+    mapsLinkContainer.style.display = 'none';
+    return;
+  }
+  
+  const location = locations.find(loc => loc.id === selectedLocationId);
+  if (!location) return;
+  
+  // Add distance information if available
+  let distanceHTML = '';
+  if (userLocation && location.distance !== undefined) {
+    distanceHTML = `
+      <p class="location-distance" style="margin-top: 8px;">
+        <svg class="distance-icon icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>${formatDistance(location.distance)} from your location</span>
+      </p>
+    `;
+  }
+  
+  let stockHTML = '';
+  location.stock.forEach(item => {
+    stockHTML += `
+      <div class="stock-item">
+        <div>
+          <div class="stock-name">${item.name}</div>
+          <div class="stock-flavor">${item.flavor}</div>
+          <div class="stock-price">${item.price}</div>
         </div>
-      `;
-    }
+        <div class="stock-availability ${item.available > 0 ? 'in-stock' : 'out-of-stock'}">
+          ${item.available > 0 ? `${item.available} left` : 'Out of stock'}
+        </div>
+      </div>
+    `;
+  });
+  
+  detailsContainer.innerHTML = `
+    <div class="details-header">
+      <div>
+        <h2 class="details-title">${location.name}</h2>
+        <p class="details-address">${location.address}</p>
+        ${distanceHTML}
+      </div>
+      <div class="details-status">Open 24/7</div>
+    </div>
+    
+    <div class="stock-section">
+      <h3 class="stock-title">
+        <svg class="stock-title-icon icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 10h-7l3-3"></path>
+          <path d="M18 14h-7l3 3"></path>
+          <path d="M8 18.945V20a2 2 0 01-2 2H2"></path>
+          <path d="M2 6v12"></path>
+          <path d="M6 2H4a2 2 0 00-2 2v2"></path>
+        </svg>
+        Current Stock
+      </h3>
+      
+      <div class="stock-grid">
+        ${stockHTML}
+      </div>
+    </div>
+  `;
+}
 
-    // Setup the custom cursor and smoke effect
-    function setupCursorEffect() {
-      // Setup cursor
-      document.addEventListener('mousemove', (e) => {
-        const currentX = e.clientX;
-        const currentY = e.clientY;
-        
-        // Calculate movement distance
-        const moveDistance = Math.sqrt(
-          Math.pow(currentX - lastMouseX, 2) + 
-          Math.pow(currentY - lastMouseY, 2)
-        );
-        
-        // Update cursor position
-        mouseX = currentX;
-        mouseY = currentY;
-        customCursor.style.left = `${mouseX}px`;
-        customCursor.style.top = `${mouseY}px`;
-        
-        // Reduce particle count on mobile devices
-        const maxParticlesPerMove = isMobile ? 2 : 5;
-        const particlesPerMove = Math.min(Math.ceil(moveDistance / 10), maxParticlesPerMove);
-        
-        // Create particles based on mouse speed and time
-        const now = Date.now();
-        if (now - lastTimeParticleCreated > 15) {
-          for (let i = 0; i < particlesPerMove; i++) {
-            createSmokeParticle();
-          }
-          lastTimeParticleCreated = now;
-        }
-        
-        lastMouseX = currentX;
-        lastMouseY = currentY;
-      });
-      
-      // Create idle smoke periodically
-      setInterval(() => {
-        if (Math.random() > 0.7) {
-          createSmokeParticle();
-        }
-      }, 100);
-      
-      // Animate smoke particles
-      setInterval(animateSmokeParticles, 16);
-    }
-
-    // Create a new smoke particle
-    function createSmokeParticle() {
-      // Create new particle element
-      const particle = document.createElement('div');
-      
-      // Random size for varied smoke appearance
-      const size = Math.floor(Math.random() * 18) + 12;
-      
-      // Varied offsets from cursor
-      const offsetX = (Math.random() - 0.5) * 10;
-      const offsetY = (Math.random() - 0.5) * 10;
-      
-      // Variable movement patterns
-      const speedX = (Math.random() - 0.5) * 1.5;
-      const speedY = (Math.random() * -2.2) - 0.6; // Upward drift
-      const rotation = Math.random() * 360;
-      const rotationSpeed = (Math.random() - 0.5) * 1.2;
-      
-      // Random blur for soft edges
-      const blurAmount = Math.random() * 4 + 2;
-      
-      // Slight color variation
-      const hue = 220 + Math.random() * 40; // Slight blue tint
-      const saturation = Math.random() * 5; // Very subtle saturation
-      const lightness = 95 + Math.random() * 5; // Nearly white
-      const color1 = `hsla(${hue}, ${saturation}%, ${lightness}%, ${0.65 + Math.random() * 0.25})`;
-      const color2 = `hsla(${hue}, ${saturation}%, ${lightness}%, 0)`;
-      
-      // Apply styles
-      particle.style.position = 'absolute';
-      particle.style.width = `${size}px`;
-      particle.style.height = `${size}px`;
-      particle.style.left = `${mouseX + offsetX}px`;
-      particle.style.top = `${mouseY + offsetY}px`;
-      particle.style.borderRadius = '50%';
-      particle.style.opacity = `${0.4 + Math.random() * 0.4}`;
-      particle.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-      particle.style.filter = `blur(${blurAmount}px)`;
-      particle.style.background = `radial-gradient(circle, ${color1} 0%, ${color2} 80%)`;
-      particle.style.mixBlendMode = 'screen';
-      particle.style.transition = 'opacity 0.6s ease-out';
-      
-      // Add to container
-      smokeContainer.appendChild(particle);
-      
-      // Store particle data
-      particles.push({
-        element: particle,
-        size: size,
-        speedX: speedX,
-        speedY: speedY,
-        rotation: rotation,
-        rotationSpeed: rotationSpeed,
-        opacity: 0.4 + Math.random() * 0.4,
-        x: mouseX + offsetX,
-        y: mouseY + offsetY,
-        growRate: 0.2 + Math.random() * 0.2,
-        fadeRate: 0.004 + Math.random() * 0.004,
-        maxSize: size * (3 + Math.random() * 3),
-        turbulenceX: Math.random() * 0.05 - 0.025,
-        turbulenceY: Math.random() * 0.05 - 0.025,
-        turbulencePhase: Math.random() * Math.PI * 2
-      });
-      
-      // Limit particles to prevent performance issues
-      // Reduce particles on mobile
-      const maxParticles = isMobile ? 30 : 75;
-      if (particles.length > maxParticles) {
-        smokeContainer.removeChild(particles[0].element);
-        particles.shift();
+// Setup the custom cursor and smoke effect
+function setupCursorEffect() {
+  // Setup cursor
+  document.addEventListener('mousemove', (e) => {
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+    
+    // Calculate movement distance
+    const moveDistance = Math.sqrt(
+      Math.pow(currentX - lastMouseX, 2) + 
+      Math.pow(currentY - lastMouseY, 2)
+    );
+    
+    // Update cursor position
+    mouseX = currentX;
+    mouseY = currentY;
+    customCursor.style.left = `${mouseX}px`;
+    customCursor.style.top = `${mouseY}px`;
+    
+    // Reduce particle count on mobile devices
+    const maxParticlesPerMove = isMobile ? 2 : 5;
+    const particlesPerMove = Math.min(Math.ceil(moveDistance / 10), maxParticlesPerMove);
+    
+    // Create particles based on mouse speed and time
+    const now = Date.now();
+    if (now - lastTimeParticleCreated > 15) {
+      for (let i = 0; i < particlesPerMove; i++) {
+        createSmokeParticle();
       }
+      lastTimeParticleCreated = now;
     }
-
-    // Animate smoke particles
-    function animateSmokeParticles() {
-      const particlesToRemove = [];
-      
-      particles.forEach((particle, index) => {
-        // Add turbulence for natural movement
-        particle.turbulencePhase += 0.05;
-        const turbX = Math.sin(particle.turbulencePhase) * particle.turbulenceX;
-        const turbY = Math.cos(particle.turbulencePhase) * particle.turbulenceY;
-        
-        // Gradual slowdown of horizontal movement
-        particle.speedX *= 0.992;
-        // Slight acceleration upward
-        particle.speedY *= 1.005;
-        
-        // Update position with turbulence
-        particle.x += particle.speedX + turbX;
-        particle.y += particle.speedY + turbY;
-        
-        // Update size and opacity
-        if (particle.size < particle.maxSize) {
-          particle.size += particle.growRate;
-        }
-        particle.opacity -= particle.fadeRate;
-        
-        // Update rotation for swirling effect
-        particle.rotation += particle.rotationSpeed;
-        
-        // Apply updates to DOM element
-        particle.element.style.left = `${particle.x}px`;
-        particle.element.style.top = `${particle.y}px`;
-        particle.element.style.width = `${particle.size}px`;
-        particle.element.style.height = `${particle.size}px`;
-        particle.element.style.opacity = particle.opacity;
-        particle.element.style.transform = `translate(-50%, -50%) rotate(${particle.rotation}deg) scale(${1 + Math.sin(particle.turbulencePhase) * 0.05})`;
-        
-        // Mark for removal if too faded
-        if (particle.opacity <= 0.02) {
-          particlesToRemove.push(index);
-        }
-      });
-      
-      // Remove faded particles
-      for (let i = particlesToRemove.length - 1; i >= 0; i--) {
-        const index = particlesToRemove[i];
-        if (particles[index] && particles[index].element) {
-          smokeContainer.removeChild(particles[index].element);
-          particles.splice(index, 1);
-        }
-      }
+    
+    lastMouseX = currentX;
+    lastMouseY = currentY;
+  });
+  
+  // Create idle smoke periodically
+  setInterval(() => {
+    if (Math.random() > 0.7) {
+      createSmokeParticle();
     }
+  }, 100);
+  
+  // Animate smoke particles
+  setInterval(animateSmokeParticles, 16);
+}
 
-    // Initialize the application
-    window.addEventListener('load', init);
-  </script>
+// Create a new smoke particle
+function createSmokeParticle() {
+  // Create new particle element
+  const particle = document.createElement('div');
+  
+  // Random size for varied smoke appearance
+  const size = Math.floor(Math.random() * 18) + 12;
+  
+  // Varied offsets from cursor
+  const offsetX = (Math.random() - 0.5) * 10;
+  const offsetY = (Math.random() - 0.5) * 10;
+  
+  // Variable movement patterns
+  const speedX = (Math.random() - 0.5) * 1.5;
+  const speedY = (Math.random() * -2.2) - 0.6; // Upward drift
+  const rotation = Math.random() * 360;
+  const rotationSpeed = (Math.random() - 0.5) * 1.2;
+  
+  // Random blur for soft edges
+  const blurAmount = Math.random() * 4 + 2;
+  
+  // Slight color variation
+  const hue = 220 + Math.random() * 40; // Slight blue tint
+  const saturation = Math.random() * 5; // Very subtle saturation
+  const lightness = 95 + Math.random() * 5; // Nearly white
+  const color1 = `hsla(${hue}, ${saturation}%, ${lightness}%, ${0.65 + Math.random() * 0.25})`;
+  const color2 = `hsla(${hue}, ${saturation}%, ${lightness}%, 0)`;
+  
+  // Apply styles
+  particle.style.position = 'absolute';
+  particle.style.width = `${size}px`;
+  particle.style.height = `${size}px`;
+  particle.style.left = `${mouseX + offsetX}px`;
+  particle.style.top = `${mouseY + offsetY}px`;
+  particle.style.borderRadius = '50%';
+  particle.style.opacity = `${0.4 + Math.random() * 0.4}`;
+  particle.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+  particle.style.filter = `blur(${blurAmount}px)`;
+  particle.style.background = `radial-gradient(circle, ${color1} 0%, ${color2} 80%)`;
+  particle.style.mixBlendMode = 'screen';
+  particle.style.transition = 'opacity 0.6s ease-out';
+  
+  // Add to container
+  smokeContainer.appendChild(particle);
+  
+  // Store particle data
+  particles.push({
+    element: particle,
+    size: size,
+    speedX: speedX,
+    speedY: speedY,
+    rotation: rotation,
+    rotationSpeed: rotationSpeed,
+    opacity: 0.4 + Math.random() * 0.4,
+    x: mouseX + offsetX,
+    y: mouseY + offsetY,
+    growRate: 0.2 + Math.random() * 0.2,
+    fadeRate: 0.004 + Math.random() * 0.004,
+    maxSize: size * (3 + Math.random() * 3),
+    turbulenceX: Math.random() * 0.05 - 0.025,
+    turbulenceY: Math.random() * 0.05 - 0.025,
+    turbulencePhase: Math.random() * Math.PI * 2
+  });
+  
+  // Limit particles to prevent performance issues
+  // Reduce particles on mobile
+  const maxParticles = isMobile ? 30 : 75;
+  if (particles.length > maxParticles) {
+    smokeContainer.removeChild(particles[0].element);
+    particles.shift();
+  }
+}
+
+// Animate smoke particles
+function animateSmokeParticles() {
+  const particlesToRemove = [];
+  
+  particles.forEach((particle, index) => {
+    // Add turbulence for natural movement
+    particle.turbulencePhase += 0.05;
+    const turbX = Math.sin(particle.turbulencePhase) * particle.turbulenceX;
+    const turbY = Math.cos(particle.turbulencePhase) * particle.turbulenceY;
+    
+    // Gradual slowdown of horizontal movement
+    particle.speedX *= 0.992;
+    // Slight acceleration upward
+    particle.speedY *= 1.005;
+    
+    // Update position with turbulence
+    particle.x += particle.speedX + turbX;
+    particle.y += particle.speedY + turbY;
+    
+    // Update size and opacity
+    if (particle.size < particle.maxSize) {
+      particle.size += particle.growRate;
+    }
+    particle.opacity -= particle.fadeRate;
+    
+    // Update rotation for swirling effect
+    particle.rotation += particle.rotationSpeed;
+    
+    // Apply updates to DOM element
+    particle.element.style.left = `${particle.x}px`;
+    particle.element.style.top = `${particle.y}px`;
+    particle.element.style.width = `${particle.size}px`;
+    particle.element.style.height = `${particle.size}px`;
+    particle.element.style.opacity = particle.opacity;
+    particle.element.style.transform = `translate(-50%, -50%) rotate(${particle.rotation}deg) scale(${1 + Math.sin(particle.turbulencePhase) * 0.05})`;
+    
+    // Mark for removal if too faded
+    if (particle.opacity <= 0.02) {
+      particlesToRemove.push(index);
+    }
+  });
+  
+  // Remove faded particles
+  for (let i = particlesToRemove.length - 1; i >= 0; i--) {
+    const index = particlesToRemove[i];
+    if (particles[index] && particles[index].element) {
+      smokeContainer.removeChild(particles[index].element);
+      particles.splice(index, 1);
+    }
+  }
+}
+
+// Initialize the application
+window.addEventListener('load', init);
+// Animate smoke particles
+function animateSmokeParticles() {
+  const particlesToRemove = [];
+  
+  particles.forEach((particle, index) => {
+    // Add turbulence for natural movement
+    particle.turbulencePhase += 0.05;
+    const turbX = Math.sin(particle.turbulencePhase) * particle.turbulenceX;
+    const turbY = Math.cos(particle.turbulencePhase) * particle.turbulenceY;
+    
+    // Gradual slowdown of horizontal movement
+    particle.speedX *= 0.992;
+    // Slight acceleration upward
+    particle.speedY *= 1.005;
+    
+    // Update position with turbulence
+    particle.x += particle.speedX + turbX;
+    particle.y += particle.speedY + turbY;
+    
+    // Update size and opacity
+    if (particle.size < particle.maxSize) {
+      particle.size += particle.growRate;
+    }
+    particle.opacity -= particle.fadeRate;
+    
+    // Update rotation for swirling effect
+    particle.rotation += particle.rotationSpeed;
+    
+    // Apply updates to DOM element
+    particle.element.style.left = `${particle.x}px`;
+    particle.element.style.top = `${particle.y}px`;
+    particle.element.style.width = `${particle.size}px`;
+    particle.element.style.height = `${particle.size}px`;
+    particle.element.style.opacity = particle.opacity;
+    particle.element.style.transform = `translate(-50%, -50%) rotate(${particle.rotation}deg) scale(${1 + Math.sin(particle.turbulencePhase) * 0.05})`;
+    
+    // Mark for removal if too faded
+    if (particle.opacity <= 0.02) {
+      particlesToRemove.push(index);
+    }
+  });
+  
+  // Remove faded particles
+  for (let i = particlesToRemove.length - 1; i >= 0; i--) {
+    const index = particlesToRemove[i];
+    if (particles[index] && particles[index].element) {
+      smokeContainer.removeChild(particles[index].element);
+      particles.splice(index, 1);
+    }
+  }
+}
+
+// Initialize the application
+window.addEventListener('load', init);
+</script>
 </body>
 </html>
