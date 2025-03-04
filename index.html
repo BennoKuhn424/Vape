@@ -1,9 +1,8 @@
-/* Location permission modal */
-    .modal {<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CloudChasers™ - Vape Vending Locator</title>
   <style>
     * {
@@ -11,23 +10,36 @@
       padding: 0;
       box-sizing: border-box;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      touch-action: manipulation;
     }
 
     body {
       background-color: #121826;
       color: #e2e8f0;
       min-height: 100vh;
-      padding: 1.5rem;
+      padding: 1rem;
       position: relative;
-      cursor: none; /* Hide the default cursor */
+      cursor: none; /* Hide the default cursor on desktop */
+    }
+    
+    /* Show normal cursor on mobile */
+    @media (max-width: 768px) {
+      body {
+        cursor: auto;
+      }
+      
+      .cursor {
+        display: none;
+      }
     }
 
     header {
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
     }
 
     header h1 {
-      font-size: 2.5rem;
+      font-size: clamp(2rem, 5vw, 2.5rem);
       font-weight: bold;
       color: #a78bfa;
       margin-bottom: 0.5rem;
@@ -35,17 +47,19 @@
 
     header p {
       color: #94a3b8;
+      font-size: clamp(0.9rem, 3vw, 1rem);
     }
 
     .container {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1rem;
     }
 
     @media (min-width: 1024px) {
       .container {
         flex-direction: row;
+        gap: 1.5rem;
       }
     }
 
@@ -54,11 +68,13 @@
       border-radius: 0.75rem;
       padding: 1rem;
       width: 100%;
+      margin-bottom: 1rem;
     }
 
     @media (min-width: 1024px) {
       .sidebar {
         width: 33.333333%;
+        margin-bottom: 0;
       }
     }
 
@@ -79,9 +95,10 @@
       background-color: #334155;
       border: none;
       border-radius: 0.5rem;
-      padding: 0.5rem 1rem 0.5rem 2.5rem;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
       color: #e2e8f0;
       outline: none;
+      font-size: 1rem; /* Larger font for better mobile tapping */
     }
 
     input[type="text"]:focus {
@@ -92,10 +109,11 @@
       max-height: 24rem;
       overflow-y: auto;
       padding-right: 0.5rem;
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     }
 
     .location-item {
-      padding: 0.75rem;
+      padding: 0.9rem; /* Larger touch targets for mobile */
       border-radius: 0.5rem;
       cursor: pointer;
       transition: all 0.2s;
@@ -105,6 +123,10 @@
 
     .location-item:hover {
       background-color: #475569;
+    }
+
+    .location-item:active {
+      transform: scale(0.98); /* Subtle feedback on mobile press */
     }
 
     .location-item.selected {
@@ -125,6 +147,7 @@
 
     .location-name {
       font-weight: 500;
+      font-size: 1.05rem; /* Slightly larger for mobile */
     }
 
     .location-address {
@@ -156,12 +179,13 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1rem;
     }
 
     @media (min-width: 1024px) {
       .content {
         width: 66.666667%;
+        gap: 1.5rem;
       }
     }
 
@@ -169,10 +193,17 @@
       background-color: #1e293b;
       border-radius: 0.75rem;
       padding: 1rem;
-      height: 16rem;
+      min-height: 12rem; /* Adaptive height for mobile */
+      height: auto;
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+
+    @media (min-width: 768px) {
+      .map-container {
+        height: 16rem;
+      }
     }
 
     .map-content {
@@ -184,12 +215,12 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
       margin-bottom: 1rem;
     }
 
     .map-marker {
-      padding: 0.25rem 0.75rem;
+      padding: 0.5rem 0.75rem; /* Larger touch target */
       border-radius: 0.5rem;
       display: flex;
       align-items: center;
@@ -198,10 +229,15 @@
       transition: all 0.2s;
       background-color: #334155;
       color: #cbd5e1;
+      margin-bottom: 0.5rem;
     }
 
     .map-marker:hover {
       background-color: #475569;
+    }
+
+    .map-marker:active {
+      transform: scale(0.95); /* Feedback on mobile */
     }
 
     .map-marker.selected {
@@ -220,6 +256,7 @@
 
     .map-placeholder {
       color: #94a3b8;
+      padding: 0 1rem;
     }
 
     .map-count {
@@ -231,27 +268,56 @@
     .details-container {
       background-color: #1e293b;
       border-radius: 0.75rem;
-      padding: 1.5rem;
-      min-height: 16rem;
+      padding: 1.25rem;
+      min-height: 12rem;
+    }
+
+    @media (min-width: 768px) {
+      .details-container {
+        padding: 1.5rem;
+        min-height: 16rem;
+      }
     }
 
     .details-empty {
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 16rem;
+      height: 12rem;
       color: #94a3b8;
+    }
+
+    @media (min-width: 768px) {
+      .details-empty {
+        height: 16rem;
+      }
     }
 
     .details-header {
       display: flex;
-      justify-content: space-between;
-      align-items: start;
+      flex-direction: column;
+      gap: 0.75rem;
       margin-bottom: 1rem;
     }
 
+    @media (min-width: 768px) {
+      .details-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: start;
+      }
+    }
+
+    .details-status {
+      background-color: #334155;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      align-self: flex-start;
+    }
+
     .details-title {
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       font-weight: bold;
       color: #a78bfa;
     }
@@ -260,15 +326,8 @@
       color: #94a3b8;
     }
 
-    .details-status {
-      background-color: #334155;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-    }
-
     .stock-section {
-      margin-top: 1.5rem;
+      margin-top: 1.25rem;
     }
 
     .stock-title {
@@ -287,21 +346,28 @@
     .stock-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 1rem;
+      gap: 0.75rem;
     }
 
     @media (min-width: 768px) {
       .stock-grid {
         grid-template-columns: 1fr 1fr;
+        gap: 1rem;
       }
     }
 
     .stock-item {
       background-color: #334155;
       border-radius: 0.5rem;
-      padding: 1rem;
+      padding: 0.875rem;
       display: flex;
       justify-content: space-between;
+    }
+
+    @media (min-width: 768px) {
+      .stock-item {
+        padding: 1rem;
+      }
     }
 
     .stock-name {
@@ -375,12 +441,13 @@
       align-items: center;
       background-color: #4285F4;
       color: white;
-      padding: 8px 16px;
+      padding: 10px 16px; /* Larger touch target */
       border-radius: 4px;
       text-decoration: none;
       font-weight: 500;
       transition: all 0.2s;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      margin-top: 1rem;
     }
 
     .maps-link-button:hover {
@@ -389,9 +456,16 @@
       transform: translateY(-1px);
     }
 
+    .maps-link-button:active {
+      transform: translateY(1px);
+    }
+
     .maps-icon {
       margin-right: 8px;
     }
+
+    /* Location permission modal */
+    .modal {
       display: none;
       position: fixed;
       z-index: 1001;
@@ -406,15 +480,23 @@
 
     .modal-content {
       background-color: #1e293b;
-      margin: 15% auto;
-      padding: 2rem;
+      margin: 10% auto;
+      padding: 1.5rem;
       border-radius: 1rem;
+      width: 90%;
       max-width: 500px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
 
+    @media (min-width: 768px) {
+      .modal-content {
+        padding: 2rem;
+        margin: 15% auto;
+      }
+    }
+
     .modal-title {
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       color: #a78bfa;
       margin-bottom: 1rem;
     }
@@ -431,12 +513,13 @@
     }
 
     .btn {
-      padding: 0.5rem 1.5rem;
+      padding: 0.625rem 1.5rem; /* Larger touch target */
       border-radius: 0.5rem;
       border: none;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
+      font-size: 1rem; /* Larger text */
     }
 
     .btn-primary {
@@ -448,6 +531,10 @@
       background-color: #8b5cf6;
     }
 
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+
     .btn-secondary {
       background-color: transparent;
       color: #94a3b8;
@@ -456,6 +543,45 @@
 
     .btn-secondary:hover {
       background-color: #334155;
+    }
+
+    .btn-secondary:active {
+      transform: scale(0.97);
+    }
+    
+    /* Mobile-specific overrides */
+    @media (max-width: 768px) {
+      body {
+        padding: 0.75rem;
+      }
+      
+      .location-list {
+        max-height: 40vh; /* Use viewport height for better mobile experience */
+      }
+      
+      .maps-link-container {
+        padding: 8px 0;
+      }
+      
+      .maps-link-button {
+        width: 100%; /* Full width button on mobile */
+        justify-content: center;
+      }
+    }
+    
+    /* Fix for iOS overscroll behavior */
+    html {
+      position: fixed;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    body {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
     }
   </style>
 </head>
@@ -506,7 +632,7 @@
             <!-- Map markers will be inserted here by JS -->
           </div>
           <p class="map-placeholder">Interactive map would display here</p>
-          <p id="map-count" class="map-count">Showing ${filteredLocations.length} vape vending machines in Pretoria</p>
+          <p id="map-count" class="map-count">Showing vape vending machines in Pretoria</p>
           
           <!-- Google Maps link button (hidden until location is selected) -->
           <div id="maps-link-container" style="display: none; margin-top: 15px;">
@@ -530,6 +656,9 @@
   </div>
 
   <script>
+    // Check if device is mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     // Mock data for vape vending machines in Pretoria
     const locations = [
       {
@@ -630,8 +759,13 @@
       // Setup event listeners
       searchInput.addEventListener('input', handleSearch);
       
-      // Setup cursor and smoke effect
-      setupCursorEffect();
+      // Setup cursor and smoke effect only on non-mobile devices
+      if (!isMobile) {
+        setupCursorEffect();
+      } else {
+        // Hide cursor on mobile
+        if (customCursor) customCursor.style.display = 'none';
+      }
       
       // Show location permission modal
       setTimeout(() => {
@@ -647,6 +781,15 @@
       btnSkip.addEventListener('click', () => {
         locationModal.style.display = 'none';
       });
+      
+      // Fix for iOS overscroll issues
+      if (isMobile) {
+        document.body.addEventListener('touchmove', function(e) {
+          if (e.target.closest('.location-list') === null) {
+            e.preventDefault();
+          }
+        }, { passive: false });
+      }
     }
 
     // Get user's location
@@ -678,6 +821,11 @@
           },
           (error) => {
             console.error("Error getting location:", error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
           }
         );
       } else {
@@ -756,6 +904,20 @@
           const { lat, lng } = location.coordinates;
           googleMapsLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
           mapsLinkContainer.style.display = 'block';
+          
+          // For mobile, add a click event listener to open Google Maps app if available
+          if (isMobile) {
+            googleMapsLink.href = `geo:${lat},${lng}?q=${encodeURIComponent(location.name)}`;
+            // Fallback for iOS
+            googleMapsLink.addEventListener('click', (e) => {
+              if (navigator.platform.indexOf('iPhone') !== -1 || 
+                  navigator.platform.indexOf('iPad') !== -1 || 
+                  navigator.platform.indexOf('iPod') !== -1) {
+                e.preventDefault();
+                window.location.href = `maps://maps.apple.com/?q=${lat},${lng}&z=16`;
+              }
+            });
+          }
         }
       } else {
         mapsLinkContainer.style.display = 'none';
@@ -763,12 +925,20 @@
       
       // Update details panel
       renderDetailsPanel();
+      
+      // Scroll to details on mobile
+      if (isMobile && locationId) {
+        setTimeout(() => {
+          detailsContainer.scrollIntoView({behavior: 'smooth'});
+        }, 300);
+      }
     }
 
     // Render the list of locations
     function renderLocationList() {
       if (filteredLocations.length === 0) {
-        locationList.innerHTML = '<p class="loading-message">No locations found</p>';
+        locationList.innerHTML = '<p class="loading-message">less goo found</p>';
+          locationList.innerHTML = '<p class="loading-message">No locations found</p>';
         return;
       }
       
@@ -958,10 +1128,12 @@
         customCursor.style.left = `${mouseX}px`;
         customCursor.style.top = `${mouseY}px`;
         
+        // Reduce particle count on mobile devices
+        const maxParticlesPerMove = isMobile ? 2 : 5;
+        const particlesPerMove = Math.min(Math.ceil(moveDistance / 10), maxParticlesPerMove);
+        
         // Create particles based on mouse speed and time
         const now = Date.now();
-        const particlesPerMove = Math.min(Math.ceil(moveDistance / 10), 5);
-        
         if (now - lastTimeParticleCreated > 15) {
           for (let i = 0; i < particlesPerMove; i++) {
             createSmokeParticle();
@@ -1049,7 +1221,9 @@
       });
       
       // Limit particles to prevent performance issues
-      if (particles.length > 75) {
+      // Reduce particles on mobile
+      const maxParticles = isMobile ? 30 : 75;
+      if (particles.length > maxParticles) {
         smokeContainer.removeChild(particles[0].element);
         particles.shift();
       }
